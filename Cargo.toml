@@ -1,0 +1,89 @@
+# `gpui_morphorm`, in its own repository.
+#
+# It was the `layout-engine` project of the usage suite: a second `LayoutEngine`,
+# written outside the tree, behind `gpui_engine`'s six-method trait. Like
+# `gpui_parley` it is a *second implementation* of a seam the facade swaps, so it
+# is meant to be depended on rather than shipped inside the distribution — and,
+# like `gpui_parley`, it publishes from a repository of its own, by tag.
+#
+# The name continues the distribution's own family. `docs/contract.md` §5 in
+# `bite-gpui/distribution` maps `gpui_X` to `bite-gp-X`, which is the rule that
+# already took `gpui_parley` to `bite-gp-parley`; applied to this crate that is
+# `bite-gp-morphorm`. The version is the same scheme's next free slot:
+# `major.minor.(patch * 100 + amendment)` at upstream 1.21, so `1.21.0` is the
+# base, `1.21.1` is `bite-gp-parley`'s first amendment, and this crate takes
+# `1.21.2`.
+#
+# `package.name` and `[lib] name` differ, which is invariant 2 of the
+# distribution: the package identifier carries the namespace, the library target
+# keeps the name the code uses, and `use gpui_morphorm::…` in a consumer is
+# unaffected by either.
+[package]
+name = "bite-gp-morphorm"
+version = "1.21.2"
+edition = "2024"
+license = "Apache-2.0"
+description = "A morphorm-backed LayoutEngine for GPUI"
+repository = "https://github.com/bite-gpui/gpui_morphorm"
+readme = "README.md"
+keywords = ["gui", "layout", "morphorm", "flexbox"]
+categories = ["gui"]
+
+# Its own workspace root, so the crate stands alone: no path to a checkout, and
+# `cargo test` here does not need one.
+[workspace]
+
+[lints.clippy]
+dbg_macro = "deny"
+todo = "deny"
+
+[lib]
+# Not derived from the package name, and it must not be: `bite-gp-morphorm` would
+# export `bite_gp_morphorm` while every file here — and every consumer — says
+# `use gpui_morphorm::…`. Invariant 2, applied to a crate that lives outside the
+# distribution.
+name = "gpui_morphorm"
+path = "src/gpui_morphorm.rs"
+
+[dependencies]
+# lib name `gpui_engine` — the trait this crate implements, and the style types
+# that cross it (`EngineLayoutStyle`, `LayoutId`, `MeasureContext`).
+gpui_engine = { version = "1.21", package = "bite-gp-engine" }
+# lib name `gpui_types` — `Pixels`, `Bounds`, `Length`, `Edges`, and the
+# device-pixel snapping helpers both engines share.
+gpui_types = { version = "1.21", package = "bite-gp-types" }
+# The facade, and only for the two things that need a window: the demo example
+# and the injection test. `MorphormLayoutEngine` itself needs none of it — it
+# names the trait, and the trait is `gpui_engine`'s. `default-features = false`
+# keeps the platform stack out of a plain `cargo build`; `demo` and
+# `test-support` turn it back on, which is all the facade's own `default` feature
+# does.
+gpui = { version = "1.21", package = "bite-gpui", default-features = false, optional = true }
+# The solver behind the second column. A one-pass layout algorithm with its own
+# vocabulary — `Row`/`Column`/`Overlay`/`Grid`, `Stretch` as a share of free
+# space, one nine-way `Alignment` for both axes — which is what makes the
+# conversion in `src/gpui_morphorm.rs` a translation rather than a rename.
+morphorm = "0.9"
+
+[features]
+demo = ["dep:gpui", "gpui/platform"]
+test-support = ["dep:gpui", "gpui/platform", "gpui/test-support"]
+
+[dev-dependencies]
+# The first column: the facade's own engine, which is taffy (`gpui_engine_default`,
+# package `bite-gp-engine-default`). Comparing against it is what makes this a
+# second column rather than a library measured alone.
+gpui_engine_default = { version = "1.21", package = "bite-gp-engine-default" }
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "layout_engine"
+harness = false
+
+[[example]]
+name = "layout_demo"
+required-features = ["demo"]
+
+[[test]]
+name = "facade"
+required-features = ["test-support"]

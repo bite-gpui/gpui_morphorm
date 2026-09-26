@@ -1,0 +1,49 @@
+# The system packages this repository needs before anything links.
+#
+# The list is `bite-gpui/gpui_parley`'s verbatim, which is itself
+# `bite-gpui/distribution`'s — the union of what ce's publish job installs and
+# what zed's `script/linux` installs for Debian/Ubuntu — because that list is a
+# *proven* superset: it links the whole layer stack, including `gpui_macros`'
+# `render_test`, which pulls more than anything here does.
+#
+# This crate's own dependency tree is pure Rust: `morphorm`, plus the two SPI
+# crates (`gpui_engine`, `gpui_types`) it maps between. Nothing the library links
+# is a system library. What needs the packages is everything that links the
+# *facade* — the `layout_demo` example and the `test-support` frame test — because
+# that is X11, Wayland, xkbcommon and wgpu. The frame test is headless and opens no
+# window; linking it is what needs them.
+#
+# Keeping the whole proven list rather than trimming it to the two targets that
+# link something is deliberate: a short list is how a release job fails at the
+# linker, and `gpui_parley` has already paid for that lesson twice —
+#
+#   * `cargo publish` verifies a release by unpacking the tarball and building it
+#     as the root of its own build, so libraries a crate links are needed in the
+#     *publish* job even though nothing there looks like a build. Without
+#     fontconfig, `yeslogic-fontconfig-sys`'s build script unwraps a `pkg-config`
+#     result and the verification dies as a panic (exit status 101) rather than as
+#     a failed link — which is how that crate's 1.21.0 stopped.
+#   * a short list is not enough to *link test binaries*. `ce`'s packaging list
+#     alone died at the linker with `unable to find library -lX11-xcb` while
+#     linking a test that pulls the whole stack.
+name: Install Linux build dependencies
+description: Install the system packages this repository needs to build and link on Debian/Ubuntu
+
+runs:
+  using: composite
+  steps:
+    # The list is Debian's, and there is no macOS leg to skip it for: the crate
+    # has no platform-specific code path, so it is built on Linux only. The
+    # `if` is kept so a runner change cannot surprise this into a macOS failure.
+    - name: Install system dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libasound2-dev libegl1-mesa-dev libfontconfig-dev libgit2-dev \
+          libglib2.0-dev libgles2-mesa-dev libssl-dev libsqlite3-dev \
+          libva-dev libvulkan1 libvulkan-dev libwayland-dev \
+          libx11-dev libx11-xcb-dev libxkbcommon-dev libxkbcommon-x11-dev \
+          libxcb-randr0-dev libxcb-shape0-dev libxcb-xfixes0-dev \
+          libxcb-xinput-dev libzstd-dev

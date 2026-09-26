@@ -1,0 +1,12 @@
+# For this repository's own builds — its tests, its criterion benchmark, and the
+# example. A consumer is not affected: cargo ignores a dependency's toolchain
+# file.
+#
+# It is the same compiler the sibling `bite-gpui/gpui_parley` repository pins, so
+# the two crates of this family are built and measured by one toolchain and their
+# numbers are comparable. It is newer than the pin the crate inherited while it
+# lived inside the zed checkout (1.95.0), which is why the numbers in
+# `benchmarks/` were re-taken on arrival here rather than carried over — a number
+# is the compiler's as much as the code's.
+[toolchain]
+channel = "1.98.1"
