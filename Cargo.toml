@@ -25,6 +25,7 @@ edition = "2024"
 license = "Apache-2.0"
 description = "A morphorm-backed LayoutEngine for GPUI"
 repository = "https://github.com/bite-gpui/gpui_morphorm"
+homepage = "https://bite-gpui.github.io/"
 readme = "README.md"
 keywords = ["gui", "layout", "morphorm", "flexbox"]
 categories = ["gui"]
